@@ -195,9 +195,7 @@ public enum SkeletonConfigOffsets {
 		this.stringVal = stringVal;
 		this.configKey = CONFIG_PREFIX + configKey;
 		this.label = label;
-
 		this.defaultValue = defaultValue;
-
 		this.affectedOffsets = affectedOffsets
 			== null ? new BoneType[0] : affectedOffsets;
 	}

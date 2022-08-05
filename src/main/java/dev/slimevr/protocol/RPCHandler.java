@@ -251,20 +251,20 @@ public class RPCHandler extends ProtocolHandler<RpcMessageHeader>
 		int filterSettings = FilteringSettings
 			.createFilteringSettings(
 				fbb,
-				TrackerFilters
+				TrackerFilteringTypes
 					.valueOf(
 						this.api.server.config
-							.getString(TrackerFiltering.CONFIG_PREFIX + "type", "NONE")
+							.getString(TrackerFilteringTypes.CONFIG_KEY, "none")
 					).id,
-				(int) (this.api.server.config
-					.getFloat(
-						TrackerFiltering.CONFIG_PREFIX + "amount",
-						TrackerFiltering.DEFAULT_INTENSITY
-					) * 100),
+				(this.api.server.config
+					.getInt(
+						TrackerFilteringValues.AMOUNT.configKey,
+						TrackerFilteringValues.AMOUNT.defaultValue
+					)),
 				this.api.server.config
 					.getInt(
-						TrackerFiltering.CONFIG_PREFIX + "tickCount",
-						TrackerFiltering.DEFAULT_TICK
+						TrackerFilteringValues.BUFFER.configKey,
+						TrackerFilteringValues.BUFFER.defaultValue
 					)
 			);
 
@@ -320,13 +320,13 @@ public class RPCHandler extends ProtocolHandler<RpcMessageHeader>
 		}
 
 		if (req.filtering() != null) {
-			TrackerFilters type = TrackerFilters.fromId(req.filtering().type());
+			TrackerFilteringTypes type = TrackerFilteringTypes.getById(req.filtering().type());
 			if (type != null) {
 				this.api.server
 					.updateTrackersFilters(
 						type,
-						req.filtering().intensity() / 100.0f,
-						req.filtering().ticks()
+						req.filtering().amount(),
+						req.filtering().buffer()
 					);
 			}
 		}

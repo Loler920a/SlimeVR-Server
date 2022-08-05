@@ -3,8 +3,8 @@ package dev.slimevr.gui;
 import com.jme3.math.FastMath;
 import dev.slimevr.VRServer;
 import dev.slimevr.gui.swing.EJBagNoStretch;
-import dev.slimevr.vr.trackers.TrackerFiltering;
-import dev.slimevr.vr.trackers.TrackerFilters;
+import dev.slimevr.vr.trackers.TrackerFilteringTypes;
+import dev.slimevr.vr.trackers.TrackerFilteringValues;
 import io.eiren.util.StringUtils;
 
 import javax.swing.*;
@@ -19,8 +19,8 @@ public class TrackersFiltersGUI extends EJBagNoStretch {
 	private final VRServer server;
 	private final JLabel amountLabel;
 	private final JLabel ticksLabel;
-	TrackerFilters filterType;
-	float filterAmount;
+	TrackerFilteringTypes filterType;
+	int filterAmount;
 	int filterTicks;
 
 	public TrackersFiltersGUI(VRServer server, VRServerGUI gui) {
@@ -32,12 +32,19 @@ public class TrackersFiltersGUI extends EJBagNoStretch {
 
 		setAlignmentY(TOP_ALIGNMENT);
 		add(Box.createVerticalStrut(10));
-		filterType = TrackerFilters.valueOf(server.config.getString("filters.type", "NONE"));
+		filterType = TrackerFilteringTypes
+			.getByStringValue(
+				server.config
+					.getString(
+						TrackerFilteringTypes.CONFIG_KEY,
+						TrackerFilteringTypes.NONE.configVal
+					)
+			);
 
 		JComboBox<String> filterSelect;
 		add(filterSelect = new JComboBox<>(), s(c(0, row, 2), 4, 1));
 
-		for (TrackerFilters f : TrackerFilters.values()) {
+		for (TrackerFilteringTypes f : TrackerFilteringTypes.values()) {
 			filterSelect.addItem(f.name());
 		}
 		filterSelect.setSelectedItem(filterType.toString());
@@ -45,28 +52,29 @@ public class TrackersFiltersGUI extends EJBagNoStretch {
 		filterSelect.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				filterType = TrackerFilters.valueOf(filterSelect.getSelectedItem().toString());
+				filterType = TrackerFilteringTypes
+					.valueOf(filterSelect.getSelectedItem().toString());
 				server.updateTrackersFilters(filterType, filterAmount, filterTicks);
 			}
 		});
 		add(Box.createVerticalStrut(40));
 		row++;
 
-		filterAmount = FastMath
+		filterAmount = (int) FastMath
 			.clamp(
 				server.config
-					.getFloat(
-						TrackerFiltering.CONFIG_PREFIX + "amount",
-						TrackerFiltering.DEFAULT_INTENSITY
+					.getInt(
+						TrackerFilteringValues.AMOUNT.configKey,
+						TrackerFilteringValues.AMOUNT.defaultValue
 					),
 				0,
-				1
+				100
 			);
 
-		add(new JLabel("Intensity"), c(0, row, 2));
+		add(new JLabel("Amount"), c(0, row, 2));
 		add(new AdjButton("+", 0, false), c(1, row, 2));
 		add(
-			amountLabel = new JLabel(StringUtils.prettyNumber(filterAmount * 100f) + "%"),
+			amountLabel = new JLabel(StringUtils.prettyNumber(filterAmount) + "%"),
 			c(2, row, 2)
 		);
 		add(new AdjButton("-", 0, true), c(3, row, 2));
@@ -75,14 +83,14 @@ public class TrackersFiltersGUI extends EJBagNoStretch {
 			.clamp(
 				server.config
 					.getInt(
-						TrackerFiltering.CONFIG_PREFIX + "tickCount",
-						TrackerFiltering.DEFAULT_TICK
+						TrackerFilteringValues.BUFFER.configKey,
+						TrackerFilteringValues.BUFFER.defaultValue
 					),
 				0,
 				80
 			);
 
-		add(new JLabel("Ticks"), c(0, row, 2));
+		add(new JLabel("Buffer"), c(0, row, 2));
 		add(new AdjButton("+", 1, false), c(1, row, 2));
 		add(ticksLabel = new JLabel(StringUtils.prettyNumber(filterTicks)), c(2, row, 2));
 		add(new AdjButton("-", 1, true), c(3, row, 2));
@@ -91,11 +99,11 @@ public class TrackersFiltersGUI extends EJBagNoStretch {
 	void adjustValues(int cat, boolean neg) {
 		if (cat == 0) {
 			if (neg) {
-				filterAmount = FastMath.clamp(filterAmount - 0.1f, 0, 1);
+				filterAmount = (int) FastMath.clamp(filterAmount - 10, 0, 100);
 			} else {
-				filterAmount = FastMath.clamp(filterAmount + 0.1f, 0, 1);
+				filterAmount = (int) FastMath.clamp(filterAmount + 10, 0, 100);
 			}
-			amountLabel.setText((StringUtils.prettyNumber(filterAmount * 100f)) + "%");
+			amountLabel.setText((StringUtils.prettyNumber(filterAmount)) + "%");
 		} else if (cat == 1) {
 			if (neg) {
 				filterTicks = (int) FastMath.clamp(filterTicks - 1, 0, 80);

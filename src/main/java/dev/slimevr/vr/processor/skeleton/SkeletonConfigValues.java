@@ -41,7 +41,6 @@ public enum SkeletonConfigValues {
 		this.id = id;
 		this.stringVal = stringVal;
 		this.configKey = CONFIG_PREFIX + configKey;
-
 		this.defaultValue = defaultValue;
 	}
 

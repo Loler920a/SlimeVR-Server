@@ -293,10 +293,10 @@ public class VRServer extends Thread {
 		});
 	}
 
-	public void updateTrackersFilters(TrackerFilters filter, float amount, int ticks) {
-		config.setProperty("filters.type", filter.name());
-		config.setProperty("filters.amount", amount);
-		config.setProperty("filters.tickCount", ticks);
+	public void updateTrackersFilters(TrackerFilteringTypes filter, float amount, int buffer) {
+		config.setProperty(TrackerFilteringTypes.CONFIG_KEY, filter.configVal);
+		config.setProperty(TrackerFilteringValues.AMOUNT.configKey, amount);
+		config.setProperty(TrackerFilteringValues.BUFFER.configKey, buffer);
 		saveConfig();
 
 		IMUTracker imu;
@@ -304,7 +304,7 @@ public class VRServer extends Thread {
 			Tracker tracker = t.get();
 			if (tracker instanceof IMUTracker) {
 				imu = (IMUTracker) tracker;
-				imu.setFilter(filter.name(), amount, ticks);
+				imu.setFilter(filter.name(), amount, buffer);
 			}
 		}
 	}

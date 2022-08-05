@@ -30,7 +30,7 @@ public class IMUTracker
 	protected final TrackersUDPServer server;
 	protected final VRServer vrserver;
 	private final Quaternion buffQuat = new Quaternion();
-	public int movementFilterTickCount = 0;
+	public int movementFilterBuffer = 0;
 	public float movementFilterAmount = 1f;
 	public int calibrationStatus = 0;
 	public int magCalibrationStatus = 0;
@@ -92,45 +92,45 @@ public class IMUTracker
 				.getByDesignation(config.designation)
 				.ifPresent(trackerPosition -> bodyPosition = trackerPosition);
 			setFilter(
-				vrserver.config.getString(TrackerFiltering.CONFIG_PREFIX + "type"),
+				vrserver.config.getString(TrackerFilteringTypes.CONFIG_KEY),
 				vrserver.config
-					.getFloat(
-						TrackerFiltering.CONFIG_PREFIX + "amount",
-						TrackerFiltering.DEFAULT_INTENSITY
+					.getInt(
+						TrackerFilteringValues.AMOUNT.configKey,
+						TrackerFilteringValues.AMOUNT.defaultValue
 					),
 				vrserver.config
 					.getInt(
-						TrackerFiltering.CONFIG_PREFIX + "tickCount",
-						TrackerFiltering.DEFAULT_TICK
+						TrackerFilteringValues.BUFFER.configKey,
+						TrackerFilteringValues.BUFFER.defaultValue
 					)
 			);
 		}
 	}
 
-	public void setFilter(String type, float amount, int ticks) {
+	public void setFilter(String type, float amount, int buffer) {
 		amount = FastMath.clamp(amount, 0, 1f);
-		ticks = (int) FastMath.clamp(ticks, 0, 50);
+		buffer = (int) FastMath.clamp(buffer, 0, 50);
 		if (type != null) {
 			switch (type) {
-				case "INTERPOLATION":
+				case "SMOOTHING":
 					movementFilterAmount = 1f - (amount / 1.6f);
-					movementFilterTickCount = ticks;
+					movementFilterBuffer = buffer;
 					break;
-				case "EXTRAPOLATION":
+				case "PREDICTION":
 					movementFilterAmount = 1f + (amount * 1.15f);
-					movementFilterTickCount = ticks;
+					movementFilterBuffer = buffer;
 					break;
 				case "NONE":
 				default:
 					movementFilterAmount = 1f;
-					movementFilterTickCount = 0;
+					movementFilterBuffer = 0;
 					break;
 			}
 		} else {
 			movementFilterAmount = 1f;
-			movementFilterTickCount = 0;
+			movementFilterBuffer = 0;
 		}
-		previousRots = new CircularArrayList<Quaternion>(movementFilterTickCount + 1);
+		previousRots = new CircularArrayList<Quaternion>(movementFilterBuffer + 1);
 	}
 
 	public Quaternion getMountingRotation() {
@@ -172,7 +172,7 @@ public class IMUTracker
 
 	@Override
 	public boolean getRotation(Quaternion store) {
-		if (movementFilterTickCount > 0 && movementFilterAmount != 1 && previousRots.size() > 0) {
+		if (movementFilterBuffer > 0 && movementFilterAmount != 1 && previousRots.size() > 0) {
 			buffQuat.set(previousRots.get(0));
 			buffQuat.slerpLocal(rotQuaternion, movementFilterAmount);
 			store.set(buffQuat);
@@ -208,8 +208,8 @@ public class IMUTracker
 	public void dataTick() {
 		timer.update();
 
-		if (movementFilterTickCount != 0) {
-			if (previousRots.size() > movementFilterTickCount) {
+		if (movementFilterBuffer != 0) {
+			if (previousRots.size() > movementFilterBuffer) {
 				previousRots.remove(0);
 			}
 			previousRots.add(rotQuaternion.clone());
